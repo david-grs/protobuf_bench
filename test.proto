@@ -1,0 +1,16 @@
+message test
+{
+  required string str1 = 1;
+  required double d1 = 2;
+  required string str2 = 3;
+  required double d2 = 4;
+  required string str3 = 5;
+  required double d3 = 6;
+  required string str4 = 7;
+  required double d4 = 8;
+  required string str5 = 9;
+  required double d5 = 10;
+  repeated string strlist = 11;
+  repeated double dlist = 12;
+};
+
