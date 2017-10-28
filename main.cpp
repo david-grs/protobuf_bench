@@ -78,10 +78,15 @@ int main()
 
         run_benchmark("protobuf deserialization", 1000, [&]()
         {
+            test t;
+            t.ParseFromString(serialized);
+
+            if (t.str1().size() != 40)
+                throw std::runtime_error("failed");
         });
 
         malloc_counter& counter = mt.get<0>();
-        std::cout << "malloc_calls=" << counter.malloc_calls() << " bytes_allocated=" << (counter.malloc_bytes() / std::size_t(1 << 20)) << "M" << std::endl;
+        std::cout << "malloc_calls=" << counter.malloc_calls() << " bytes_allocated=" << (counter.malloc_bytes() / std::size_t(1 << 10)) << "k" << std::endl;
     }
 
     return 0;
