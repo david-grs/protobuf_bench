@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <string>
+#include <sstream>
 
 void dump()
 {
@@ -24,8 +25,24 @@ void dump()
     t.SerializePartialToOstream(&ofs);
 }
 
+std::string from_disk(const std::string& filename = "test.data")
+{
+    enum { BufferSize = 1024 };
+    char buff[BufferSize];
+
+    std::string str;
+    std::ifstream ifs(filename);
+    while (std::streamsize bytes = ifs.readsome(buff, BufferSize))
+        str.append(buff, bytes);
+
+    return str;
+}
+
+
 int main()
 {
-    dump();
+    //dump();
+    const std::string serialized = from_disk();
+
 }
 
