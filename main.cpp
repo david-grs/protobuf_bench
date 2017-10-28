@@ -1,8 +1,12 @@
 #include "test.pb.h"
 
+#include "mtrace/mtrace.h"
+#include "mtrace/malloc_counter.h"
+
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <iostream>
 
 void dump()
 {
@@ -43,6 +47,14 @@ int main()
 {
     //dump();
     const std::string serialized = from_disk();
+
+    {
+        mtrace<malloc_counter> mt;
+
+        malloc_counter& counter = mt.get<0>();
+        std::cout << "malloc_calls=" << counter.malloc_calls() << " bytes_allocated=" << (counter.malloc_bytes() / std::size_t(1 << 20)) << "M" << std::endl;
+
+    }
 
 }
 
