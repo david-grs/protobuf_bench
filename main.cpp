@@ -3,11 +3,15 @@
 #include "mtrace/mtrace.h"
 #include "mtrace/malloc_counter.h"
 
+#include <rapidjson/document.h>
+
 #include <chrono>
 #include <fstream>
 #include <string>
 #include <sstream>
 #include <iostream>
+
+using namespace rapidjson;
 
 void dump()
 {
@@ -46,6 +50,8 @@ std::string from_disk(const std::string& filename = "test.data")
 template <typename Callable>
 void run_benchmark(const std::string& desc, std::size_t iterations, Callable&& callable)
 {
+    mtrace<malloc_counter> mt;
+
     auto start = std::chrono::steady_clock::now();
 
     for (std::size_t i = 0; i < iterations; ++i)
@@ -65,7 +71,10 @@ void run_benchmark(const std::string& desc, std::size_t iterations, Callable&& c
     }
 
     double per_iteration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / double(iterations);
-    std::cout << " per_iteration=" << per_iteration << "ns" << std::endl;
+    std::cout << " per_iteration=" << per_iteration << "ns";
+
+    malloc_counter& counter = mt.get<0>();
+    std::cout << " --- malloc_calls=" << counter.malloc_calls() << " bytes_allocated=" << (counter.malloc_bytes() / std::size_t(1 << 10)) << "k" << std::endl;
 }
 
 int main()
@@ -73,21 +82,39 @@ int main()
     //dump();
     const std::string serialized = from_disk();
 
+    run_benchmark("protobuf deserialization", 1000, [&]()
     {
-        mtrace<malloc_counter> mt;
+        test t;
+        t.ParseFromString(serialized);
 
-        run_benchmark("protobuf deserialization", 1000, [&]()
+        if (t.str1().size() != 40)
+            throw std::runtime_error("failed");
+    });
+
+    const std::string json = R"json(
         {
-            test t;
-            t.ParseFromString(serialized);
+            "str1": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "str2": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "str3": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "str4": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "str5": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "d1": 1.0,
+            "d2": 1.0,
+            "d3": 1.0,
+            "d4": 1.0,
+            "d5": 1.0
+        }
+        )json";
 
-            if (t.str1().size() != 40)
-                throw std::runtime_error("failed");
-        });
+    Document document;
 
-        malloc_counter& counter = mt.get<0>();
-        std::cout << "malloc_calls=" << counter.malloc_calls() << " bytes_allocated=" << (counter.malloc_bytes() / std::size_t(1 << 10)) << "k" << std::endl;
-    }
+    run_benchmark("rapidjson deserialization", 1000, [&]()
+    {
+        document.Parse(json.c_str());
+
+        if (document["str1"].GetStringLength() != 40)
+            throw std::runtime_error("failed");
+    });
 
     return 0;
 }
