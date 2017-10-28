@@ -82,7 +82,7 @@ int main()
     //dump();
     const std::string serialized = from_disk();
 
-    run_benchmark("protobuf deserialization", 1000, [&]()
+    run_benchmark("protobuf deserialization", 10000, [&]()
     {
         test t;
         t.ParseFromString(serialized);
@@ -108,7 +108,7 @@ int main()
 
     Document document;
 
-    run_benchmark("rapidjson deserialization", 1000, [&]()
+    run_benchmark("rapidjson deserialization", 10000, [&]()
     {
         document.Parse(json.c_str());
 
