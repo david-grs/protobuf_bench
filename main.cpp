@@ -3,6 +3,7 @@
 #include "mtrace/mtrace.h"
 #include "mtrace/malloc_counter.h"
 
+#include <chrono>
 #include <fstream>
 #include <string>
 #include <sstream>
@@ -42,6 +43,30 @@ std::string from_disk(const std::string& filename = "test.data")
     return str;
 }
 
+template <typename Callable>
+void run_benchmark(const std::string& desc, std::size_t iterations, Callable&& callable)
+{
+    auto start = std::chrono::steady_clock::now();
+
+    for (std::size_t i = 0; i < iterations; ++i)
+        callable();
+
+    auto end = std::chrono::steady_clock::now();
+
+    double total_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    if (total_time < 1.0)
+    {
+        total_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+        std::cout << desc << ": total_time=" << total_time << "us";
+    }
+    else
+    {
+        std::cout << desc << ": total_time=" << total_time << "ms";
+    }
+
+    double per_iteration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / double(iterations);
+    std::cout << " per_iteration=" << per_iteration << "ns" << std::endl;
+}
 
 int main()
 {
@@ -51,10 +76,14 @@ int main()
     {
         mtrace<malloc_counter> mt;
 
+        run_benchmark("protobuf deserialization", 1000, [&]()
+        {
+        });
+
         malloc_counter& counter = mt.get<0>();
         std::cout << "malloc_calls=" << counter.malloc_calls() << " bytes_allocated=" << (counter.malloc_bytes() / std::size_t(1 << 20)) << "M" << std::endl;
-
     }
 
+    return 0;
 }
 
